@@ -74,6 +74,20 @@ def _is_within(target: Path, base: Path) -> bool:
         return False
 
 
+# Sandbox path prefixes that LLMs may include in file paths.
+# These need to be stripped before joining with local base directories
+# because Python's Path("/base") / "/input/file" discards the base.
+_SANDBOX_PREFIXES = ("/skill/", "/input/", "/output/", "/workspace/")
+
+
+def _strip_sandbox_prefix(path: str) -> str:
+    """Strip sandbox path prefix so the path can be joined with a local base."""
+    for prefix in _SANDBOX_PREFIXES:
+        if path.startswith(prefix):
+            return path[len(prefix):]
+    return path
+
+
 @dataclass
 class ExecutionResult:
     """Result of running a command in the sandbox."""
@@ -187,7 +201,7 @@ class Sandbox:
             return f"Unknown session: {session_id}"
 
         # Ensure path is relative and within workspace
-        target = (session.workspace / path).resolve()
+        target = (session.workspace / _strip_sandbox_prefix(path)).resolve()
         if not _is_within(target, session.workspace):
             return "Error: path traversal not allowed"
 
@@ -201,6 +215,8 @@ class Sandbox:
         if session is None:
             return f"Unknown session: {session_id}"
 
+        relative = _strip_sandbox_prefix(path)
+
         # Try workspace first, then input, then skill dir
         for base in [
             session.workspace,
@@ -209,7 +225,7 @@ class Sandbox:
         ]:
             if base is None:
                 continue
-            target = (base / path).resolve()
+            target = (base / relative).resolve()
             if _is_within(target, base) and target.is_file():
                 try:
                     return target.read_text(encoding="utf-8")
@@ -235,11 +251,12 @@ class Sandbox:
             )
 
         # Resolve file path — same search order as read_file
+        relative = _strip_sandbox_prefix(path)
         resolved: Path | None = None
         for base in [session.workspace, session.input_dir, session.skill_dir]:
             if base is None:
                 continue
-            target = (base / path).resolve()
+            target = (base / relative).resolve()
             if _is_within(target, base) and target.is_file():
                 resolved = target
                 break
