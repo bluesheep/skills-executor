@@ -218,6 +218,67 @@ class Sandbox:
 
         return f"File not found: {path}"
 
+    def read_pdf(self, session_id: str, path: str, pages: str | None = None) -> str:
+        """Extract text from a PDF in the sandbox workspace, skill dir, or input dir."""
+        import pymupdf
+
+        session = self._sessions.get(session_id)
+        if session is None:
+            return f"Unknown session: {session_id}"
+
+        # Resolve file path — same search order as read_file
+        resolved: Path | None = None
+        for base in [session.workspace, session.input_dir, session.skill_dir]:
+            if base is None:
+                continue
+            target = (base / path).resolve()
+            if _is_within(target, base) and target.is_file():
+                resolved = target
+                break
+
+        if resolved is None:
+            return f"File not found: {path}"
+
+        try:
+            doc = pymupdf.open(str(resolved))
+        except Exception as e:
+            return f"Failed to open PDF: {e}"
+
+        # Determine which pages to extract
+        total_pages = len(doc)
+        if pages:
+            try:
+                start_str, end_str = pages.split("-", 1)
+                start = max(0, int(start_str))
+                end = min(total_pages - 1, int(end_str))
+                page_range = range(start, end + 1)
+            except (ValueError, TypeError):
+                doc.close()
+                return f"Invalid page range '{pages}'. Use format '0-4' (0-indexed)."
+        else:
+            page_range = range(total_pages)
+
+        parts: list[str] = []
+        for i in page_range:
+            page = doc[i]
+            text = page.get_text()
+            if text.strip():
+                parts.append(f"--- Page {i} ---\n{text}")
+
+        doc.close()
+
+        if not parts:
+            return f"No extractable text found in {path} (pages may be image-based)."
+
+        result = "\n".join(parts)
+
+        # Truncate to stay within token limits
+        max_chars = 50_000
+        if len(result) > max_chars:
+            result = result[:max_chars] + f"\n\n[Truncated — showed {max_chars} of {len(result)} chars. Use 'pages' to read specific sections.]"
+
+        return result
+
     def list_files(self, session_id: str, directory: str = ".") -> str:
         """List files in the sandbox."""
         session = self._sessions.get(session_id)

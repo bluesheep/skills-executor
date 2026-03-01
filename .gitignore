@@ -16,6 +16,9 @@ infra/.terraform/
 # IDE
 .claude/
 
+# Secrets
+.env
+
 # Output
 output/
 .DS_Store

@@ -158,6 +158,30 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "read_pdf",
+            "description": (
+                "Extract text from a PDF file in the workspace, input directory, or skill directory. "
+                "Use this instead of read_file for PDF documents. Optionally specify a page range."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "PDF file path (relative to workspace, input, or skill dir).",
+                    },
+                    "pages": {
+                        "type": "string",
+                        "description": "Optional page range, e.g. '0-4' for first 5 pages (0-indexed). Omit to read all pages.",
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "list_files",
             "description": "List files and directories in the workspace.",
             "parameters": {
@@ -219,6 +243,7 @@ class ToolDispatcher:
         "execute_command": ["command"],
         "write_file": ["path", "content"],
         "read_file": ["path"],
+        "read_pdf": ["path"],
     }
 
     def _validate_arguments(self, tool_name: str, arguments: dict[str, Any]) -> str | None:
@@ -271,6 +296,13 @@ class ToolDispatcher:
                     return self.sandbox.read_file(
                         self.session_id,
                         arguments["path"],
+                    )
+
+                case "read_pdf":
+                    return self.sandbox.read_pdf(
+                        self.session_id,
+                        arguments["path"],
+                        arguments.get("pages"),
                     )
 
                 case "list_files":
