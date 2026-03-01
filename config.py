@@ -89,6 +89,9 @@ class SandboxConfig:
     mode: SandboxMode = SandboxMode.SUBPROCESS
     timeout_seconds: int = 120
 
+    # Azure Document Intelligence (for PDF extraction)
+    document_intelligence_endpoint: str = ""
+
     @classmethod
     def from_env(cls) -> "SandboxConfig":
         mode_str = os.getenv("SANDBOX_MODE", "subprocess")
@@ -102,6 +105,7 @@ class SandboxConfig:
         return cls(
             mode=mode,
             timeout_seconds=int(os.getenv("SANDBOX_TIMEOUT", "120")),
+            document_intelligence_endpoint=os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", ""),
         )
 
 

@@ -31,3 +31,10 @@ variable "openai_model_capacity" {
   type        = number
   default     = 100
 }
+
+variable "api_key" {
+  description = "API key for authenticating requests to the skills executor"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

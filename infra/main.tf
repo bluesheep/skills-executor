@@ -140,6 +140,18 @@ resource "azurerm_container_app" "api" {
         name  = "AZURE_CLIENT_ID"
         value = azurerm_user_assigned_identity.app.client_id
       }
+      env {
+        name  = "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+        value = azurerm_cognitive_account.document_intelligence.endpoint
+      }
+
+      dynamic "env" {
+        for_each = var.api_key != "" ? [1] : []
+        content {
+          name  = "API_KEY"
+          value = var.api_key
+        }
+      }
     }
   }
 
@@ -191,5 +203,25 @@ resource "azurerm_cognitive_deployment" "gpt" {
 resource "azurerm_role_assignment" "openai_user" {
   scope                = azurerm_cognitive_account.openai.id
   role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = azurerm_user_assigned_identity.app.principal_id
+}
+
+# ============================================================
+# Azure Document Intelligence
+# ============================================================
+
+resource "azurerm_cognitive_account" "document_intelligence" {
+  name                  = "di-${var.environment_name}-${local.resource_token}"
+  resource_group_name   = azurerm_resource_group.rg.name
+  location              = var.location
+  kind                  = "FormRecognizer"
+  sku_name              = "S0"
+  custom_subdomain_name = "di-${var.environment_name}-${local.resource_token}"
+  tags                  = local.tags
+}
+
+resource "azurerm_role_assignment" "document_intelligence_user" {
+  scope                = azurerm_cognitive_account.document_intelligence.id
+  role_definition_name = "Cognitive Services User"
   principal_id         = azurerm_user_assigned_identity.app.principal_id
 }

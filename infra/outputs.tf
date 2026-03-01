@@ -29,3 +29,7 @@ output "AZURE_OPENAI_DEPLOYMENT_NAME" {
 output "SERVICE_API_RESOURCE_NAME" {
   value = azurerm_container_app.api.name
 }
+
+output "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT" {
+  value = azurerm_cognitive_account.document_intelligence.endpoint
+}

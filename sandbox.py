@@ -219,12 +219,20 @@ class Sandbox:
         return f"File not found: {path}"
 
     def read_pdf(self, session_id: str, path: str, pages: str | None = None) -> str:
-        """Extract text from a PDF in the sandbox workspace, skill dir, or input dir."""
-        import pymupdf
+        """Extract text from a PDF using Azure Document Intelligence."""
+        from azure.ai.documentintelligence import DocumentIntelligenceClient
+        from azure.identity import DefaultAzureCredential
 
         session = self._sessions.get(session_id)
         if session is None:
             return f"Unknown session: {session_id}"
+
+        endpoint = self.config.document_intelligence_endpoint
+        if not endpoint:
+            return (
+                "Azure Document Intelligence is not configured. "
+                "Set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT to enable PDF extraction."
+            )
 
         # Resolve file path — same search order as read_file
         resolved: Path | None = None
@@ -239,45 +247,56 @@ class Sandbox:
         if resolved is None:
             return f"File not found: {path}"
 
-        try:
-            doc = pymupdf.open(str(resolved))
-        except Exception as e:
-            return f"Failed to open PDF: {e}"
-
-        # Determine which pages to extract
-        total_pages = len(doc)
+        # Convert 0-indexed page range to 1-indexed for DI API
+        di_pages: str | None = None
         if pages:
             try:
                 start_str, end_str = pages.split("-", 1)
                 start = max(0, int(start_str))
-                end = min(total_pages - 1, int(end_str))
-                page_range = range(start, end + 1)
+                end = int(end_str)
+                di_pages = f"{start + 1}-{end + 1}"
             except (ValueError, TypeError):
-                doc.close()
                 return f"Invalid page range '{pages}'. Use format '0-4' (0-indexed)."
-        else:
-            page_range = range(total_pages)
+
+        try:
+            client = DocumentIntelligenceClient(
+                endpoint=endpoint,
+                credential=DefaultAzureCredential(),
+            )
+            with open(resolved, "rb") as f:
+                poller = client.begin_analyze_document(
+                    "prebuilt-layout",
+                    body=f,
+                    pages=di_pages,
+                )
+            result = poller.result()
+        except Exception as e:
+            return f"Document Intelligence analysis failed: {e}"
+
+        if not result.pages:
+            return f"No extractable content found in {path}."
 
         parts: list[str] = []
-        for i in page_range:
-            page = doc[i]
-            text = page.get_text()
-            if text.strip():
-                parts.append(f"--- Page {i} ---\n{text}")
-
-        doc.close()
+        for page in result.pages:
+            page_num = page.page_number
+            lines = []
+            if page.lines:
+                for line in page.lines:
+                    lines.append(line.content)
+            if lines:
+                # Display with 0-indexed page numbers to match the tool interface
+                parts.append(f"--- Page {page_num - 1} ---\n" + "\n".join(lines))
 
         if not parts:
             return f"No extractable text found in {path} (pages may be image-based)."
 
-        result = "\n".join(parts)
+        text = "\n".join(parts)
 
-        # Truncate to stay within token limits
         max_chars = 50_000
-        if len(result) > max_chars:
-            result = result[:max_chars] + f"\n\n[Truncated — showed {max_chars} of {len(result)} chars. Use 'pages' to read specific sections.]"
+        if len(text) > max_chars:
+            text = text[:max_chars] + f"\n\n[Truncated — showed {max_chars} of {len(text)} chars. Use 'pages' to read specific sections.]"
 
-        return result
+        return text
 
     def list_files(self, session_id: str, directory: str = ".") -> str:
         """List files in the sandbox."""

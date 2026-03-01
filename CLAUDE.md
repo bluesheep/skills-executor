@@ -42,7 +42,9 @@ Skills live in `skills/<name>/` with a `SKILL.md`, optional `scripts/`, and opti
 
 **Sandbox path convention** - SKILL.md instructions reference absolute paths: `/skill/`, `/input/`, `/output/`, `/workspace/`. Subprocess mode rewrites them to local paths via `_rewrite_sandbox_paths()`.
 
-**Azure deployment** - Deployed as an Azure Container App via Terraform + azd. Uses a User-Assigned Managed Identity for passwordless auth to Azure AI Services (OpenAI). The `AZURE_CLIENT_ID` env var tells `DefaultAzureCredential` which identity to use. Images are built in the cloud via `az acr build` (no local Docker needed).
+**Azure deployment** - Deployed as an Azure Container App via Terraform + azd. Uses a User-Assigned Managed Identity for passwordless auth to Azure AI Services (OpenAI) and Azure Document Intelligence. The `AZURE_CLIENT_ID` env var tells `DefaultAzureCredential` which identity to use. Images are built in the cloud via `az acr build` (no local Docker needed).
+
+**PDF extraction** - Uses Azure Document Intelligence (`prebuilt-layout` model) for PDF text extraction via the `read_pdf` tool. Authenticates with `DefaultAzureCredential` (Managed Identity in Azure, local credentials for dev). The endpoint is configured via `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`.
 
 ## Environment Variables
 
@@ -56,11 +58,15 @@ Skills live in `skills/<name>/` with a `SKILL.md`, optional `scripts/`, and opti
 - `AZURE_API_VERSION` - API version (default: `2024-12-01-preview`)
 - `AZURE_CLIENT_ID` - Managed Identity client ID (set automatically in Azure deployment)
 
+### Azure Document Intelligence
+- `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` - Document Intelligence endpoint (e.g. `https://di-xxx.cognitiveservices.azure.com/`). Required for `read_pdf` tool. Set automatically in Azure deployment.
+
 ### Optional
 - `LLM_MODEL` - model name (default: `gpt-4.1`)
 - `SANDBOX_MODE` - `subprocess` or `none` (default: `subprocess`)
 - `SKILL_PATHS` - colon-separated skill directories (default: `.claude/skills:.agents/skills`)
 - `MAX_TURNS` - agent loop limit (default: `30`)
+- `API_KEY` - Bearer token for authenticating API requests. In Terraform, set via the `api_key` variable.
 
 ## Dev Conventions
 
@@ -100,7 +106,7 @@ az containerapp update --name <app-name> --resource-group <rg-name> \
 azd down --purge
 ```
 
-Terraform resources: Resource Group, Managed Identity, ACR, Log Analytics, Container Apps Environment, Container App, AI Services (OpenAI), model deployment, role assignments (AcrPull + Cognitive Services OpenAI User).
+Terraform resources: Resource Group, Managed Identity, ACR, Log Analytics, Container Apps Environment, Container App, AI Services (OpenAI), model deployment, Document Intelligence (FormRecognizer), role assignments (AcrPull + Cognitive Services OpenAI User + Cognitive Services User for DI).
 
 ## Testing
 
@@ -138,6 +144,11 @@ curl -X POST http://localhost:8000/run-with-files \
   -F 'task=Analyze this code using the repo-analyzer skill' \
   -F 'files=@server.py' \
   -F 'files=@config.py'
+
+# Run with PDF (tests Document Intelligence integration)
+curl -X POST http://localhost:8000/run-with-files \
+  -F 'task=Read the PDF file and summarize its contents.' \
+  -F 'files=@sample-contract.pdf'
 ```
 
 ### Azure (deployed)
@@ -162,9 +173,16 @@ curl -X POST https://<app-fqdn>/run \
 
 # Run with files (tests full pipeline: upload, skill loading, script execution, LLM)
 curl -X POST https://<app-fqdn>/run-with-files \
+  -H "Authorization: Bearer <api-key>" \
   -F 'task=Analyze this code using the repo-analyzer skill' \
   -F 'files=@server.py' \
   -F 'files=@config.py'
+
+# Run with PDF (tests Document Intelligence integration)
+curl -X POST https://<app-fqdn>/run-with-files \
+  -H "Authorization: Bearer <api-key>" \
+  -F 'task=Read the PDF file and summarize its contents.' \
+  -F 'files=@sample-contract.pdf'
 
 # Check container logs if something fails
 az containerapp logs show --name <app-name> --resource-group <rg-name> --type console --tail 50
@@ -177,4 +195,5 @@ az containerapp logs show --name <app-name> --resource-group <rg-name> --type sy
 - `/skills` returns at least `repo-analyzer`
 - `/run` with a simple task gets an LLM response (confirms auth works)
 - `/run-with-files` with source files produces `output_files` (confirms sandbox + skill execution work)
+- `/run-with-files` with a PDF returns extracted text (confirms Document Intelligence + Managed Identity auth)
 - On Azure: no 429 rate limit errors (check quota with `az cognitiveservices usage list -l <region>`)
