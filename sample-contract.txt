@@ -1,0 +1,74 @@
+SOFTWARE AS A SERVICE AGREEMENT
+
+PARTIES
+
+This Software as a Service Agreement (the "Agreement") is entered into as of January 15, 2026 by and between CloudTech Solutions Inc., a Delaware corporation ("Provider"), and Acme Manufacturing Corp., a California corporation ("Customer").
+
+1. DEFINITIONS
+
+1.1 "Service" means the cloud-based ERP software platform.
+1.2 "Customer Data" means all data submitted by Customer to the Service.
+1.3 "Authorized Users" means employees and contractors authorized to use the Service.
+
+2. SERVICE AND LICENSE
+
+2.1 Provider grants Customer a non-exclusive, non-transferable right to access and use the Service during the Term for internal business purposes.
+2.2 Customer shall not sublicense, sell, reverse engineer, or use the Service to develop a competing product.
+2.3 Provider shall maintain 99.5% uptime measured monthly, excluding scheduled maintenance.
+
+3. FEES AND PAYMENT
+
+3.1 Customer shall pay 240,000 USD per year in quarterly installments of 60,000 USD.
+3.2 Overdue amounts accrue interest at 1.5% per month.
+3.3 Fees are exclusive of taxes. Customer is responsible for all applicable taxes.
+
+4. TERM AND TERMINATION
+
+4.1 Three (3) year initial term from the Effective Date.
+4.2 Auto-renews for one (1) year periods with thirty (30) days notice to cancel.
+4.3 Either Party may terminate for material breach with fifteen (15) days cure period.
+4.4 Upon termination, Provider makes Customer Data available for seven (7) days, then may delete all Customer Data.
+
+5. INTELLECTUAL PROPERTY
+
+5.1 Provider retains all rights in the Service including modifications developed using Customer feedback.
+5.2 Customer retains rights in Customer Data but grants Provider an irrevocable, perpetual, worldwide license to use Customer Data in anonymized form for any purpose including product improvement and benchmarking.
+5.3 All feedback and suggestions become sole property of Provider.
+
+6. DATA PROTECTION
+
+6.1 Provider processes Customer Data solely for providing the Service.
+6.2 Provider implements commercially reasonable security measures.
+6.3 Breach notification within seventy-two (72) hours.
+6.4 Customer Data may be stored in any country where Provider maintains facilities.
+
+7. LIMITATION OF LIABILITY
+
+7.1 TOTAL LIABILITY CAPPED AT FEES PAID IN THE SIX (6) MONTHS PRECEDING THE CLAIM.
+7.2 NO LIABILITY FOR INDIRECT, CONSEQUENTIAL, OR PUNITIVE DAMAGES.
+7.3 Provider not liable for damages from use in violation of this Agreement.
+
+8. INDEMNIFICATION
+
+8.1 Provider indemnifies Customer against IP infringement claims only, with sole control of defense.
+8.2 Customer indemnifies Provider and its officers, directors, employees against ALL claims arising from: (a) use of the Service; (b) Customer Data; (c) breach of this Agreement; (d) actions of Authorized Users.
+
+9. GOVERNING LAW AND DISPUTES
+
+9.1 Governed by Delaware law.
+9.2 Binding arbitration in Wilmington, Delaware. JURY TRIAL WAIVED.
+9.3 Prevailing party recovers attorneys fees.
+
+10. GENERAL PROVISIONS
+
+10.1 Entire agreement, supersedes all prior.
+10.2 Amendment requires writing signed by both Parties.
+10.3 Customer may not assign without Provider consent (sole discretion).
+
+IN WITNESS WHEREOF, the Parties have executed this Agreement.
+
+Provider: CloudTech Solutions Inc.
+By: _______________ John Smith, VP Sales
+
+Customer: Acme Manufacturing Corp.
+By: _______________ Jane Doe, General Counsel

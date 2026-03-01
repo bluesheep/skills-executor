@@ -1,0 +1,7 @@
+.venv
+.azure
+.claude
+__pycache__
+*.pyc
+output
+*.zip

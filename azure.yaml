@@ -1,0 +1,13 @@
+name: skills-executor
+metadata:
+  template: skills-executor@0.0.1-beta
+infra:
+  provider: terraform
+services:
+  api:
+    project: .
+    language: py
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .

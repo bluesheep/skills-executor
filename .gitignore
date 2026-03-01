@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Azure
+.azure/
+
+# IDE
+.claude/
+
+# Output
+output/
+.DS_Store
