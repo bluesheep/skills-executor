@@ -44,6 +44,8 @@ Skills live in `skills/<name>/` with a `SKILL.md`, optional `scripts/`, and opti
 
 **Azure deployment** - Deployed as an Azure Container App via Terraform + azd. Uses a User-Assigned Managed Identity for passwordless auth to Azure AI Services (OpenAI) and Azure Document Intelligence. The `AZURE_CLIENT_ID` env var tells `DefaultAzureCredential` which identity to use. Images are built in the cloud via `az acr build` (no local Docker needed).
 
+**Web search** - The `web_search` tool uses [Tavily](https://tavily.com/) to search the web and return LLM-optimized results. Configured via `TAVILY_API_KEY`. Uses lazy imports so the dependency is only required when the tool is actually called.
+
 **PDF extraction** - Uses Azure Document Intelligence (`prebuilt-layout` model) for PDF text extraction via the `read_pdf` tool. Authenticates with `DefaultAzureCredential` (Managed Identity in Azure, local credentials for dev). The endpoint is configured via `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`.
 
 ## Environment Variables
@@ -60,6 +62,9 @@ Skills live in `skills/<name>/` with a `SKILL.md`, optional `scripts/`, and opti
 
 ### Azure Document Intelligence
 - `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` - Document Intelligence endpoint (e.g. `https://di-xxx.cognitiveservices.azure.com/`). Required for `read_pdf` tool. Set automatically in Azure deployment.
+
+### Web Search (Tavily)
+- `TAVILY_API_KEY` - Tavily API key for the `web_search` tool. Optional; the tool returns a helpful error if unset.
 
 ### Optional
 - `LLM_MODEL` - model name (default: `gpt-4.1`)

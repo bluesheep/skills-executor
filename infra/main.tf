@@ -152,6 +152,14 @@ resource "azurerm_container_app" "api" {
           value = var.api_key
         }
       }
+
+      dynamic "env" {
+        for_each = var.tavily_api_key != "" ? [1] : []
+        content {
+          name  = "TAVILY_API_KEY"
+          value = var.tavily_api_key
+        }
+      }
     }
   }
 

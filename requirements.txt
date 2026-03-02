@@ -8,3 +8,4 @@ azure-identity>=1.16.0
 gunicorn>=22.0.0
 python-multipart>=0.0.9
 azure-ai-documentintelligence>=1.0.0
+tavily-python>=0.5.0

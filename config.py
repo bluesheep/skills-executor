@@ -129,6 +129,9 @@ class ExecutorConfig:
     # API authentication
     api_key: str = ""
 
+    # Web search (Tavily)
+    tavily_api_key: str = ""
+
     # Session limits
     max_sessions: int = 100
     session_ttl_seconds: int = 1800  # 30 minutes
@@ -146,6 +149,7 @@ class ExecutorConfig:
             skill_paths=skill_paths,
             max_turns=int(os.getenv("MAX_TURNS", "30")),
             api_key=os.getenv("API_KEY", ""),
+            tavily_api_key=os.getenv("TAVILY_API_KEY", ""),
             max_sessions=int(os.getenv("MAX_SESSIONS", "100")),
             session_ttl_seconds=int(os.getenv("SESSION_TTL_SECONDS", "1800")),
         )

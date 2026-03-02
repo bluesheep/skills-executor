@@ -10,15 +10,22 @@ execution. The tools fall into three categories:
 2. SANDBOX EXECUTION: execute_command, write_file, read_file, list_files
    → Run skill scripts and arbitrary commands in isolation
 
-3. LIFECYCLE: finish
+3. WEB SEARCH: web_search
+   → Search the web for current information via Tavily
+
+4. LIFECYCLE: finish
    → Signal that the task is complete
 """
 
 import json
+import logging
 from typing import Any
 
+from config import ExecutorConfig
 from skill_registry import SkillRegistry
 from sandbox import Sandbox
+
+logger = logging.getLogger(__name__)
 
 # ─── Tool schemas (OpenAI function calling format) ───────────────────────────
 # These same schemas work with Azure OpenAI and can be adapted for Anthropic.
@@ -197,6 +204,33 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+
+    # ── Web search ────────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": (
+                "Search the web and return results. Use this to find current information, "
+                "documentation, recent events, or answers that are not available in the "
+                "workspace files. Returns a summary answer plus individual result snippets."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query.",
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Number of results to return (1-10). Default: 5.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
@@ -229,10 +263,12 @@ class ToolDispatcher:
         registry: SkillRegistry,
         sandbox: Sandbox,
         session_id: str,
+        config: ExecutorConfig | None = None,
     ):
         self.registry = registry
         self.sandbox = sandbox
         self.session_id = session_id
+        self.config = config
         self._loaded_skills: set[str] = set()
         self._active_skill: str | None = None
 
@@ -244,6 +280,7 @@ class ToolDispatcher:
         "write_file": ["path", "content"],
         "read_file": ["path"],
         "read_pdf": ["path"],
+        "web_search": ["query"],
     }
 
     def _validate_arguments(self, tool_name: str, arguments: dict[str, Any]) -> str | None:
@@ -311,6 +348,13 @@ class ToolDispatcher:
                         arguments.get("directory", "."),
                     )
 
+                # Web search
+                case "web_search":
+                    return self._handle_web_search(
+                        arguments["query"],
+                        arguments.get("max_results", 5),
+                    )
+
                 case _:
                     return f"Unknown tool: {tool_name}"
 
@@ -367,3 +411,56 @@ class ToolDispatcher:
         if content is None:
             return f"File '{file_path}' not found in skill '{skill_name}'."
         return content
+
+    def _handle_web_search(self, query: str, max_results: int = 5) -> str:
+        """Search the web using Tavily and return formatted results."""
+        try:
+            from tavily import TavilyClient
+        except ImportError:
+            return (
+                "Web search unavailable: tavily-python is not installed. "
+                "Install with: pip install tavily-python"
+            )
+
+        api_key = self.config.tavily_api_key if self.config else ""
+        if not api_key:
+            return (
+                "Web search not configured. "
+                "Set the TAVILY_API_KEY environment variable to enable."
+            )
+
+        max_results = max(1, min(int(max_results), 10))
+
+        try:
+            client = TavilyClient(api_key=api_key)
+            response = client.search(
+                query=query,
+                max_results=max_results,
+                include_answer=True,
+            )
+        except Exception as e:
+            logger.warning(f"Web search failed for query {query!r}: {e}")
+            return f"Web search failed: {e}"
+
+        parts: list[str] = []
+
+        # Include the AI-generated summary if available
+        answer = response.get("answer")
+        if answer:
+            parts.append(f"Summary: {answer}\n")
+
+        # Format individual results
+        results = response.get("results", [])
+        if not results:
+            return f"No results found for: {query}"
+
+        for i, result in enumerate(results, 1):
+            title = result.get("title", "No title")
+            url = result.get("url", "")
+            content = result.get("content", "")
+            if len(content) > 500:
+                content = content[:500] + "..."
+            entry = f"{i}. {title}\n   URL: {url}\n   {content}"
+            parts.append(entry)
+
+        return "\n\n".join(parts)

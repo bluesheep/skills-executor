@@ -38,3 +38,10 @@ variable "api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "tavily_api_key" {
+  description = "Tavily API key for web search functionality"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

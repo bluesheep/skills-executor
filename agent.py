@@ -129,6 +129,7 @@ class Agent:
             registry=self.registry,
             sandbox=self.sandbox,
             session_id=session_id,
+            config=self.config,
         )
 
         # Build system prompt with skill catalog
@@ -262,6 +263,7 @@ class MultiTurnAgent(Agent):
             registry=self.registry,
             sandbox=self.sandbox,
             session_id=self._session_id,
+            config=self.config,
         )
 
         skill_catalog = self.registry.get_catalog()
